@@ -1,0 +1,249 @@
+/* ==========================================================================
+   TYPORA THEME DESIGN TOKENS & PALETTES
+   ========================================================================== */
+
+:root {
+  /* Default Typography Settings */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: 'Newsreader', 'Source Serif 4', Georgia, Cambria, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-active: var(--font-sans);
+  
+  --font-size-base: 16px;
+  --line-height-base: 1.7;
+  --content-max-width: 860px;
+  --content-text-align: left;
+  
+  /* Sidebar & UI Constants */
+  --sidebar-width: 280px;
+  --toolbar-height: 48px;
+  --status-bar-height: 28px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+/* --------------------------------------------------------------------------
+   1. THEME: Typora Classic (GitHub Inspired Light)
+   -------------------------------------------------------------------------- */
+[data-theme="typora-classic"] {
+  --bg-app: #f6f8fa;
+  --bg-editor: #ffffff;
+  --bg-sidebar: #f6f8fa;
+  --bg-hover: #eaeef2;
+  --bg-active: #e1e4e8;
+  --bg-surface: #ffffff;
+  --bg-code-block: #f6f8fa;
+  --bg-code-inline: #eff1f3;
+  --bg-table-zebra: #f6f8fa;
+  --bg-callout: #f1f8ff;
+  
+  --border-color: #e1e4e8;
+  --border-subtle: #eaecef;
+  --border-focus: #0366d6;
+  
+  --text-main: #24292e;
+  --text-muted: #586069;
+  --text-subtle: #959da5;
+  --text-heading: #1b1f23;
+  --text-link: #0366d6;
+  
+  --accent-primary: #0366d6;
+  --accent-primary-hover: #0255b3;
+  --accent-secondary: #2ea44f;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  
+  --scrollbar-thumb: #d1d5da;
+  --scrollbar-thumb-hover: #959da5;
+}
+
+/* --------------------------------------------------------------------------
+   2. THEME: Academic Editorial (Warm Newsprint Serif)
+   -------------------------------------------------------------------------- */
+[data-theme="academic"] {
+  --bg-app: #f4efe6;
+  --bg-editor: #fcf9f2;
+  --bg-sidebar: #f0eae0;
+  --bg-hover: #e8e0d2;
+  --bg-active: #ded5c4;
+  --bg-surface: #ffffff;
+  --bg-code-block: #f3ece0;
+  --bg-code-inline: #ede5d7;
+  --bg-table-zebra: #f7f2e8;
+  --bg-callout: #f5eee0;
+  
+  --border-color: #ded3c1;
+  --border-subtle: #e8dfcf;
+  --border-focus: #8b4513;
+  
+  --text-main: #2c251e;
+  --text-muted: #6e6255;
+  --text-subtle: #9c8e80;
+  --text-heading: #1e1710;
+  --text-link: #8b3a1a;
+  
+  --accent-primary: #8b4513;
+  --accent-primary-hover: #6d340c;
+  --accent-secondary: #3d6a45;
+  
+  --shadow-sm: 0 1px 3px rgba(60, 40, 20, 0.06);
+  --shadow-md: 0 4px 12px rgba(60, 40, 20, 0.09);
+  --shadow-lg: 0 8px 24px rgba(60, 40, 20, 0.14);
+  
+  --scrollbar-thumb: #d3c7b3;
+  --scrollbar-thumb-hover: #b8a992;
+}
+
+/* --------------------------------------------------------------------------
+   3. THEME: Nordic Night (Nord Slate Dark Mode)
+   -------------------------------------------------------------------------- */
+[data-theme="nord-night"] {
+  --bg-app: #242933;
+  --bg-editor: #2e3440;
+  --bg-sidebar: #242933;
+  --bg-hover: #3b4252;
+  --bg-active: #434c5e;
+  --bg-surface: #3b4252;
+  --bg-code-block: #242933;
+  --bg-code-inline: #3b4252;
+  --bg-table-zebra: #343b49;
+  --bg-callout: #333d4e;
+  
+  --border-color: #434c5e;
+  --border-subtle: #3b4252;
+  --border-focus: #88c0d0;
+  
+  --text-main: #eceff4;
+  --text-muted: #d8dee9;
+  --text-subtle: #81a1c1;
+  --text-heading: #ffffff;
+  --text-link: #88c0d0;
+  
+  --accent-primary: #88c0d0;
+  --accent-primary-hover: #81a1c1;
+  --accent-secondary: #a3be8c;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  
+  --scrollbar-thumb: #4c566a;
+  --scrollbar-thumb-hover: #5e81ac;
+}
+
+/* --------------------------------------------------------------------------
+   4. THEME: Solarized Sepia (Warm Low-Eyestrain Palette)
+   -------------------------------------------------------------------------- */
+[data-theme="solarized-sepia"] {
+  --bg-app: #f5eedc;
+  --bg-editor: #fdf6e3;
+  --bg-sidebar: #eee8d5;
+  --bg-hover: #e6dfc9;
+  --bg-active: #ddd4bd;
+  --bg-surface: #ffffff;
+  --bg-code-block: #eee8d5;
+  --bg-code-inline: #eae3ce;
+  --bg-table-zebra: #f6eedb;
+  --bg-callout: #eee8d5;
+  
+  --border-color: #d3cbb7;
+  --border-subtle: #e0d7c3;
+  --border-focus: #268bd2;
+  
+  --text-main: #586e75;
+  --text-muted: #657b83;
+  --text-subtle: #93a1a1;
+  --text-heading: #073642;
+  --text-link: #268bd2;
+  
+  --accent-primary: #268bd2;
+  --accent-primary-hover: #1e70a8;
+  --accent-secondary: #859900;
+  
+  --shadow-sm: 0 1px 3px rgba(7, 54, 66, 0.05);
+  --shadow-md: 0 4px 12px rgba(7, 54, 66, 0.08);
+  --shadow-lg: 0 8px 24px rgba(7, 54, 66, 0.12);
+  
+  --scrollbar-thumb: #cfc5af;
+  --scrollbar-thumb-hover: #b4a890;
+}
+
+/* --------------------------------------------------------------------------
+   5. THEME: Monochrome Minimal (High-Contrast Pure Modernism)
+   -------------------------------------------------------------------------- */
+[data-theme="monochrome"] {
+  --bg-app: #f4f4f5;
+  --bg-editor: #ffffff;
+  --bg-sidebar: #fafafa;
+  --bg-hover: #eaeaea;
+  --bg-active: #dedede;
+  --bg-surface: #ffffff;
+  --bg-code-block: #f4f4f5;
+  --bg-code-inline: #ebebeb;
+  --bg-table-zebra: #f9f9f9;
+  --bg-callout: #f4f4f5;
+  
+  --border-color: #e4e4e7;
+  --border-subtle: #f0f0f2;
+  --border-focus: #18181b;
+  
+  --text-main: #18181b;
+  --text-muted: #52525b;
+  --text-subtle: #a1a1aa;
+  --text-heading: #09090b;
+  --text-link: #09090b;
+  
+  --accent-primary: #18181b;
+  --accent-primary-hover: #27272a;
+  --accent-secondary: #71717a;
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  
+  --scrollbar-thumb: #d4d4d8;
+  --scrollbar-thumb-hover: #a1a1aa;
+}
+
+/* --------------------------------------------------------------------------
+   6. THEME: Cyber Dark (Modern Dark Carbon & Neon Accents)
+   -------------------------------------------------------------------------- */
+[data-theme="cyber-dark"] {
+  --bg-app: #090d13;
+  --bg-editor: #0d1117;
+  --bg-sidebar: #090d13;
+  --bg-hover: #161b22;
+  --bg-active: #21262d;
+  --bg-surface: #161b22;
+  --bg-code-block: #161b22;
+  --bg-code-inline: #21262d;
+  --bg-table-zebra: #13171f;
+  --bg-callout: #161f2e;
+  
+  --border-color: #30363d;
+  --border-subtle: #21262d;
+  --border-focus: #58a6ff;
+  
+  --text-main: #c9d1d9;
+  --text-muted: #8b949e;
+  --text-subtle: #6e7681;
+  --text-heading: #f0f6fc;
+  --text-link: #58a6ff;
+  
+  --accent-primary: #58a6ff;
+  --accent-primary-hover: #79c0ff;
+  --accent-secondary: #3fb950;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.65);
+  
+  --scrollbar-thumb: #30363d;
+  --scrollbar-thumb-hover: #484f58;
+}
