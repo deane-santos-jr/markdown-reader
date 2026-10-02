@@ -26,7 +26,8 @@
       "package.json"
     ],
     "directories": {
-      "buildResources": "build"
+      "buildResources": "build",
+      "output": "release"
     },
     "mac": {
       "category": "public.app-category.productivity",

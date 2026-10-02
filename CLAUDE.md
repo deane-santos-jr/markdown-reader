@@ -9,8 +9,8 @@ npm run dev              # Vite dev server (browser) on :5173
 npm run desktop          # Vite + Electron together (dev desktop app)
 npm run build            # tsc -b && vite build  — typecheck is part of the build
 npm run lint             # oxlint (not eslint)
-npm run build:electron   # build + electron-builder (dmg/zip, nsis, AppImage)
-npm run build:electron:dir  # unpacked app dir only — faster for local verification
+npm run build:electron   # build + electron-builder (dmg/zip, nsis, AppImage) into release/
+npm run build:electron:dir  # unpacked app dir only (release/mac) — faster for local verification
 ```
 
 There is no test framework configured; `tsc -b` + `oxlint` are the only automated checks.
