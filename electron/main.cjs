@@ -1,9 +1,10 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, crashReporter } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { TextDecoder } = require('util');
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const RENDERER_RELOAD_COOLDOWN_MS = 60 * 1000;
 const ALLOWED_EXTENSIONS = new Set(['.md', '.markdown', '.mdown', '.mkd', '.txt']);
 
 function isAllowedFile(filePath) {
@@ -92,6 +93,31 @@ async function writeDocument(filePath, content, expectedModifiedTime, overwrite)
 let mainWindow = null;
 let pendingFiles = [];
 let closeConfirmed = false;
+let quitRequested = false;
+let quitOnConfirmedClose = false;
+let rendererHung = false;
+let lastRendererReloadAt = 0;
+
+crashReporter.start({ uploadToServer: false });
+
+app.on('before-quit', () => {
+  quitRequested = true;
+});
+
+function isAbnormalExit(details) {
+  return details.reason !== 'clean-exit';
+}
+
+function recordProcessExit(details) {
+  if (!isAbnormalExit(details)) return;
+  const logsDirectory = app.getPath('logs');
+  fs.mkdirSync(logsDirectory, { recursive: true });
+  const entry = JSON.stringify({ time: new Date().toISOString(), ...details });
+  fs.appendFileSync(path.join(logsDirectory, 'process-exits.log'), entry + '\n');
+}
+
+app.on('render-process-gone', (_event, _webContents, details) => recordProcessExit({ type: 'Renderer', ...details }));
+app.on('child-process-gone', (_event, details) => recordProcessExit(details));
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -140,7 +166,19 @@ async function readFileAndSend(filePath) {
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 
+function rendererCanConfirmClose() {
+  return !rendererHung && !mainWindow.webContents.isCrashed();
+}
+
+function reloadAfterRendererLoss() {
+  const now = Date.now();
+  if (now - lastRendererReloadAt < RENDERER_RELOAD_COOLDOWN_MS) return;
+  lastRendererReloadAt = now;
+  mainWindow.reload();
+}
+
 function createWindow() {
+  rendererHung = false;
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -182,10 +220,21 @@ function createWindow() {
     });
     if (argumentFile) readFileAndSend(argumentFile);
   });
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    if (isAbnormalExit(details)) reloadAfterRendererLoss();
+  });
+  mainWindow.on('unresponsive', () => {
+    rendererHung = true;
+  });
+  mainWindow.on('responsive', () => {
+    rendererHung = false;
+  });
   mainWindow.on('close', (event) => {
-    if (closeConfirmed) return;
+    quitOnConfirmedClose = quitRequested;
+    quitRequested = false;
+    if (closeConfirmed || !rendererCanConfirmClose()) return;
     event.preventDefault();
-    mainWindow?.webContents.send('close-requested');
+    mainWindow.webContents.send('close-requested');
   });
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -270,7 +319,8 @@ ipcMain.handle('window-maximize-toggle', () => {
 ipcMain.handle('window-close', () => mainWindow?.close());
 ipcMain.handle('window-close-confirmed', () => {
   closeConfirmed = true;
-  mainWindow?.close();
+  if (quitOnConfirmedClose) app.quit();
+  else mainWindow?.close();
 });
 
 app.whenReady().then(() => {
