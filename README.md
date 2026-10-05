@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# Markdown Reader
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A local Markdown and plain-text writer. One React codebase ships as a desktop app for macOS, Windows, and Linux (Electron) and as a browser app.
 
-Currently, two official plugins are available:
+![Start screen](docs/assets/start-screen.png)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- Write, preview, or split view over the same document (`⌘1`, `⌘2`, `⌘3`)
+- GitHub-flavored Markdown, KaTeX math, Mermaid diagrams, syntax highlighting, and YAML front matter
+- Outline sidebar that follows your scroll position, plus word count and reading time
+- Six reading themes, adjustable typography, and custom CSS
+- Command palette (`⌘K`), in-document search (`⌘F`), and zen mode (`F11`)
+- Export to standalone HTML, copy as rich text, or print
+- Opens `.md`, `.markdown`, `.mdown`, `.mkd`, and `.txt` files from Finder or Explorer
+- Recovers unsaved work after a crash or reload
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Security model
 
-## Expanding the Oxlint configuration
+A Markdown file can carry raw HTML, so every document is treated as untrusted input.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- Rendered HTML passes through a sanitize allowlist, and Mermaid SVG is cleaned with DOMPurify before it reaches the page.
+- The Electron window runs with context isolation, the sandbox on, and Node integration off. File IPC accepts only known text extensions and rejects files over 5 MB.
+- The app and every exported HTML file ship with a restrictive Content Security Policy.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Development
+
+```bash
+npm install
+npm run desktop          # Electron app with hot reload
+npm run dev              # browser only, http://localhost:5173
+npm test                 # Vitest
+npm run lint             # oxlint
+npm run build:electron   # installers in release/: dmg and zip (macOS), nsis (Windows), AppImage (Linux)
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Stack
+
+React 19, TypeScript, Vite, Electron, unified (remark and rehype), KaTeX, Mermaid, highlight.js, Vitest, oxlint.

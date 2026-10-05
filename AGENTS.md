@@ -1,83 +1,60 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+A local Markdown and plain-text writer. One React codebase runs as a browser app and as an Electron desktop app; `electron/main.cjs` loads `http://localhost:5173` in dev and `dist/index.html` when packaged.
 
-## Commands
+## Checks
 
-```bash
-npm run dev              # Vite dev server (browser) on :5173
-npm run desktop          # Vite + Electron together (dev desktop app)
-npm run build            # tsc -b && vite build  — typecheck is part of the build
-npm run lint             # oxlint (not eslint)
-npm run build:electron   # build + electron-builder (dmg/zip, nsis, AppImage)
-npm run build:electron:dir  # unpacked app dir only — faster for local verification
-```
+A change is done when `npm run build` (includes `tsc -b`), `npm test` (Vitest), and `npm run lint` (oxlint) all pass. `npm run check:inline-code` server-renders `MarkdownRenderer` to guard inline-code output; run it after touching the renderer. `npm run build:electron:dir` builds an unpacked desktop app for quick verification.
 
-There is no test framework configured; `tsc -b` + `oxlint` are the only automated checks.
+## Document model
 
-## Architecture
+`src/utils/documentLifecycle.ts` owns the document model. A `WriterDocument` changes only through its pure transitions (`editDocument`, `beginSaving`, `finishSaving`, `failSaving`, and the rest), and `documentLifecycle.test.ts` covers them. New document behaviour goes there, with a test.
 
-A Typora-style Markdown reader/editor that ships as both a browser SPA and an Electron desktop app from the same React code. `electron/main.cjs` loads `http://localhost:5173` in dev and `dist/index.html` when packaged.
+- `format` is `markdown`, `text`, or `neutral`. An untitled draft is `neutral` until the user picks a format at first save.
+- Only `markdown` documents get the preview and split views; every other format stays in the write view.
+- Content is held with `\n` line endings and no BOM. `serializeDocument` restores the file's original line endings and BOM, so every write to disk goes through it.
 
-### State lives in App.tsx
+`src/App.tsx` holds all UI state in `useState` and prop-drills it; there is no store or context. A new feature usually means state in `App.tsx` threaded through `HeaderToolbar`, `Sidebar`, and the views.
 
-`src/App.tsx` (~760 lines) holds *all* application state — document text, view mode, theme, typography, workspace files, modal flags — and prop-drills it. There is no store, context, or reducer. Adding a feature almost always means adding state in `App.tsx` and threading props through `HeaderToolbar` / `Sidebar` / the view components.
+## Saving and recovery
 
-The `markdown` string is the single source of truth. The four view modes (`reader | live | split | source`) are just different component trees rendered over that same string.
+- A dirty document writes a recovery snapshot to `localStorage` after 200 ms, offered back on next launch.
+- A dirty document with a path autosaves to disk after 600 ms, in Electron or when a File System Access handle exists. Recovered documents wait for an explicit save.
+- Every save sends the file's last-known modified time. When the file changed on disk, the save returns `conflict` and the UI asks before overwriting. Both `electron/main.cjs` and `src/utils/fileSystem.ts` enforce this.
 
-### Rendering pipeline
+File I/O has three paths, in precedence: Electron IPC (`window.electronAPI`, exposed by `electron/preload.cjs`), the File System Access API (`src/utils/fileSystem.ts`), then `<input type="file">` and blob download. An open or save change covers all three.
 
-`src/components/MarkdownRenderer.tsx` is the reader. Plugin order is load-bearing:
+`localStorage` keys: `writer_recovery_v1`, `writer_recents_v1`, `typora_theme`, `typora_typography`, `typora_custom_css`. `typora_doc_content` is legacy: on load it becomes a recovery snapshot and is removed. Recent files are tracked only in Electron.
+
+## Rendering
+
+`src/components/MarkdownRenderer.tsx` renders the preview. Plugin order is load-bearing:
 
 ```
 remarkGfm, remarkMath → rehypeSlug → rehypeKatex → rehypeRaw → rehypeSanitize(sanitizeSchema)
 ```
 
-`rehypeSanitize` runs last with a hand-maintained `sanitizeSchema` that lives in `src/utils/renderDocument.ts` and is shared with the export renderer. **Any new tag, class name, or attribute you emit from markdown must be added to that schema or it is silently stripped.** `hast-util-sanitize` resolves an attribute against the *first* entry naming it (then the `'*'` list), so all allowed values for one attribute must sit in a single entry — a repeated `['className', …]` silently does nothing. Custom renderers for headings/code/blockquote/table/img/li live in `src/components/markdown/`.
+`src/utils/sanitizeSchema.ts` is shared with export. A tag, class, or attribute missing from it is stripped silently. `hast-util-sanitize` resolves an attribute against the first entry naming it, so all allowed values for one attribute sit in a single entry.
 
-`CodeBlock` dispatches ` ```mermaid ` blocks to a lazily-imported `MermaidBlock`, which renders with `securityLevel: 'strict'` and then runs the SVG through DOMPurify before `dangerouslySetInnerHTML`.
+- Custom element renderers live in `src/components/markdown/`. `CodeBlock` hands mermaid fences to a lazy `MermaidBlock`, which renders at `securityLevel: 'strict'` and passes the SVG through DOMPurify.
+- Export (`exportStandaloneHTML`, `copyFormattedHtmlToClipboard`) renders from the markdown string through `src/utils/renderDocument.ts`, so it works in every view. `printDocument` prints the live page.
+- Heading IDs come from `src/utils/slugger.ts` alone, so `HeadingBlock`, `outlineExtractor`, and `rehype-slug` agree. Slug rules change there.
 
-### Export renders from markdown, not from the DOM
+## Theming
 
-`src/utils/renderDocument.ts` renders the markdown string to an HTML string through the same plugin order (plus `rehypeHighlight`, since there is no `CodeBlock` component to do it), inlines ` ```mermaid ` fences as DOMPurify'd SVG, and also returns a plain-text projection for the clipboard. `exportStandaloneHTML` and `copyFormattedHtmlToClipboard` in `exportUtils.ts` both take **markdown** and call it, so export behaves identically in all four view modes — including `source`, where nothing is mounted. Do not reintroduce a DOM read (`canvasRef.current.innerHTML`) as an export source. `printDocument` is the exception: it still prints the live page.
+Themes are `[data-theme="…"]` token blocks in `src/styles/theme-tokens.css`. To add one: extend `ThemeId` in `src/types/index.ts`, add the block, and add it to the theme lists in `HeaderToolbar` and `Sidebar`. Typography settings are CSS variables on `documentElement`. User CSS passes through `sanitizeCustomCss` in `App.tsx`.
 
-### Heading IDs and outline navigation
+## Security guardrails
 
-`src/utils/slugger.ts` wraps `github-slugger` and is the single source of truth for heading IDs — it exists so `HeadingBlock`, `outlineExtractor`, `LiveEditorView`, and the scroll-spy all agree with what `rehype-slug` produces. Change slug generation only there.
+Each of these is easy to undo by accident; keep them intact:
 
-Because the four view modes render headings differently, `handleHeadingClick` and the scroll-spy in `App.tsx` resolve a heading through a fallback chain: `#id` → `#user-content-<id>` → `[data-heading-slug]` → text match → (source mode) textarea line seek. `HeadingBlock` stamps `id`, `data-heading-slug`, and `data-heading-text` to make this work.
+- 5 MB caps: `MAX_DOCUMENT_BYTES` (used by `App.tsx` and `fileSystem.ts`) and `MAX_FILE_SIZE` in `electron/main.cjs`
+- the sanitize schema, `sanitizeCustomCss`, and DOMPurify on Mermaid SVG in both `MermaidBlock` and `renderDocument`
+- the CSP meta tag in `index.html` and the CSP written into exported HTML by `exportUtils.ts`
+- the Electron window's `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, and IPC accepting only `.md`, `.markdown`, `.mdown`, `.mkd`, `.txt`
 
-### LiveEditorView has its own parser
+## Desktop and performance
 
-`src/components/LiveEditorView.tsx` does **not** use remark. It hand-parses the document into typed blocks (heading/code/math/table/list/quote/…) for in-place block editing, with a `hybrid` (per-block) and a `stream` (single textarea) sub-mode plus a slash-command menu. Every block mutation rewrites the whole document as `blocks.map(b => b.raw).join('\n\n')`, so editing in live mode normalizes blank-line structure across the file. Its block-splitting rules are independent of the reader's parsing — changes to one do not affect the other.
-
-### Theming and typography
-
-Themes are CSS custom-property blocks under `[data-theme="…"]` in `src/styles/theme-tokens.css`; `App.tsx` sets `data-theme` on `documentElement`. Typography settings are pushed as inline CSS vars (`--font-size-base`, `--content-max-width`, `--font-active`, …) on `documentElement`. Adding a theme means: extend `ThemeId` in `src/types/index.ts`, add the token block, and add it to the theme lists in `HeaderToolbar` and `Sidebar`.
-
-User CSS is injected via `<style dangerouslySetInnerHTML>` after passing through `sanitizeCustomCss` in `App.tsx`.
-
-### File I/O has three paths
-
-Every open/save operation must consider all three, in this precedence:
-
-1. **Electron** — `window.electronAPI` (exposed by `electron/preload.cjs`) → IPC handlers in `main.cjs`, which whitelist extensions (`.md/.markdown/.mdown/.mkd/.txt`) and enforce a 5 MB cap.
-2. **File System Access API** — `src/utils/fileSystem.ts`, gives a writable `FileSystemFileHandle` used for autosave, plus `showDirectoryPicker` for the workspace tree.
-3. **Fallback** — `<input type="file">` for open, blob download for save.
-
-Autosave is a 600 ms debounce in `App.tsx` that writes to `localStorage` and, when a handle exists, through to disk. Persistence keys: `typora_doc_content`, `typora_theme`, `typora_typography`, `typora_custom_css`.
-
-Desktop "Open With" is handled in `main.cjs` via the macOS `open-file` event, the `second-instance` lock (Windows/Linux), and an `argv` scan on `did-finish-load`; file associations are declared in `package.json` under `build.fileAssociations`.
-
-### Security posture (preserve when editing)
-
-The code carries deliberate guardrails that are easy to undo accidentally: 5 MB document/file caps in `App.tsx`, `fileSystem.ts`, and `main.cjs`; the rehype sanitize schema; `sanitizeCustomCss`; DOMPurify on Mermaid SVG (both `MermaidBlock` and `renderDocument`); HTML escaping and a restrictive CSP in `src/utils/exportUtils.ts`; the CSP meta tag in `index.html`; and `contextIsolation: true, sandbox: true, nodeIntegration: false` in the Electron window.
-
-### Bundle splitting
-
-`vite.config.ts` manually chunks mermaid/cytoscape/d3, katex, highlight.js, react, and lucide-react. Heavy modals (`CommandPaletteModal`, `ExportModal`, `CustomCssModal`, `LightboxModal`) and `MermaidBlock` are `React.lazy`. Keep new heavy dependencies off the critical path the same way.
-
-## Notes
-
-- `README.md` is the untouched Vite starter template — it describes nothing about this app.
-- Keyboard shortcuts are registered in one `keydown` listener in `App.tsx` (⌘K palette, ⌘F search, ⌘1–4 view modes, ⌘\ sidebar, F11 zen).
+- Desktop "Open With" arrives three ways in `main.cjs`: the macOS `open-file` event, `second-instance` on Windows and Linux, and an `argv` scan on `did-finish-load`. File associations live in `package.json` under `build.fileAssociations`.
+- `vite.config.ts` splits mermaid, katex, highlight.js, react, and lucide-react into vendor chunks, and the modals plus `MermaidBlock` load through `React.lazy`. New heavy dependencies load the same way.
+- Keyboard shortcuts are registered in the single `keydown` listener in `App.tsx`.
