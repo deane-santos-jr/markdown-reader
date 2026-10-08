@@ -2,7 +2,17 @@
 
 A local Markdown and plain-text writer. One React codebase ships as a desktop app for macOS, Windows, and Linux (Electron) and as a browser app.
 
-![Start screen](docs/assets/start-screen.png)
+Your files stay on your disk. There is no account, no sync service, and no backend. On desktop the app opens a file and saves back to that same file.
+
+![Split view: Markdown source on the left, the rendered preview on the right, and the document outline in the sidebar](docs/assets/split-view.png)
+
+## Screenshots
+
+| Six reading themes (Cyber Dark) | Solarized Sepia |
+|---|---|
+| ![Preview in the Cyber Dark theme with a checklist, a quote, and a highlighted TypeScript block](docs/assets/theme-cyber-dark.png) | ![Preview in the Solarized Sepia theme with a budget table and a checklist](docs/assets/theme-solarized-sepia.png) |
+| **Command palette (`⌘K`)** | **Start screen** |
+| ![Command palette listing view, file, and theme commands](docs/assets/command-palette.png) | ![Start screen with New document and Open file](docs/assets/start-screen.png) |
 
 ## Features
 
